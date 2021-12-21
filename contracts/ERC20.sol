@@ -6,46 +6,43 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ParaToken is ERC20, Ownable {
-  uint256 private constant _supply = 10e7 ether;
-  uint256 private constant _vestingPeriod = 31536000;
-  uint256 private constant _vestingRate = _supply / _vestingPeriod; // amount that vests per second
-  uint256 private immutable _start;
-  address private immutable _wallet;
+    uint256 private constant SUPPLY = 10e7 ether;
+    uint256 private constant VESTING_PERIOD = 365 days;
+    uint256 private constant VESTING_RATE = SUPPLY / VESTING_PERIOD; // amount that vests per second
+    uint256 private immutable _start;
+    address private immutable _tokenWallet;
 
-  uint256 private _claimed = 0;
+    uint256 private _claimed = 0;
 
-  constructor(address wallet) ERC20("Para", "PRA") {
-    _start = block.timestamp;
-    _wallet = wallet;
-    _mint(wallet, 9 * _supply);
-  }
+    event Claimed(address indexed account, uint256 amount);
 
-  function checkClaim() external view returns (uint256 ret) {
-    uint256 elapsedTime = block.timestamp - _start;
-
-    uint256 claim;
-    if (elapsedTime >= _vestingPeriod) {
-      claim = _supply - _claimed;
-    } else {
-      claim = (_vestingRate * elapsedTime) - _claimed;
+    constructor(address tokenWallet) ERC20("Para", "PRA") {
+        _start = block.timestamp;
+        _tokenWallet = tokenWallet;
+        _mint(tokenWallet, 9 * SUPPLY);
     }
 
-    return claim;
-  }
+    function checkClaim() public view returns (uint256 ret) {
+        uint256 elapsedTime = block.timestamp - _start;
 
-  function claimOutstanding() external onlyOwner {
-    require(_claimed < _supply, "already claimed the supply amount");
+        uint256 claim;
+        if (elapsedTime >= VESTING_PERIOD) {
+            claim = SUPPLY - _claimed;
+        } else {
+            claim = (VESTING_RATE * elapsedTime) - _claimed;
+        }
 
-    uint256 elapsedTime = block.timestamp - _start;
-
-    uint256 claim;
-    if (elapsedTime >= _vestingPeriod) {
-      claim = _supply - _claimed;
-    } else {
-      claim = (_vestingRate * elapsedTime) - _claimed;
+        return claim;
     }
 
-    _claimed = _claimed + claim;
-    _mint(_wallet, claim);
-  }
+    function claimOutstanding() external onlyOwner {
+        require(_claimed < SUPPLY, "already claimed the supply amount");
+
+        uint256 claim = checkClaim();
+
+        _claimed = _claimed + claim;
+        _mint(_tokenWallet, claim);
+
+        emit Claimed(_tokenWallet, claim);
+    }
 }
