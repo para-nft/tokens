@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, network } from "hardhat";
+import { ethers, network, waffle } from "hardhat";
 import { BigNumber } from "@ethersproject/bignumber";
 
 const supply = ethers.utils.parseEther("100000000");
@@ -132,5 +132,20 @@ describe("ParaToken", function () {
     await expect(await paraToken.balanceOf(wallet.address)).to.be.equal(
       supply.mul(10)
     );
+  });
+});
+
+describe("ParaToken", function () {
+  it("Should emit Claimed event", async function () {
+    const [, wallet] = await ethers.getSigners();
+
+    // Arrange
+    const ParaToken = await ethers.getContractFactory("ParaToken");
+    const paraToken = await ParaToken.deploy(wallet.address);
+
+    // Act
+
+    // Assert
+    await expect(paraToken.claimOutstanding()).to.emit(paraToken, "Claimed");
   });
 });
